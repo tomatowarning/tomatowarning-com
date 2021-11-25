@@ -76,7 +76,7 @@ resource "aws_s3_bucket" "web-logs" {
 
 resource "aws_cloudfront_origin_access_identity" "web-oai" {
   provider = aws.primary
-  comment  = "Managed by ${var.app_name}-${var.environment} terraform"
+  comment  = "Managed by ${var.app_name}-${var.environment} terraform (test)"
 }
 
 resource "aws_cloudfront_distribution" "web-dist" {
