@@ -1,0 +1,26 @@
+org: tomatowarning
+app: tomatowarning-com
+service: tomatowarning-com-mail-handler
+frameworkVersion: '2 || 3'
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: us-east-2
+  lambdaHashingVersion: '20201221'
+  stackName: ${opt:stage, 'dev'}-tomatowarning-com-mail-handler
+  stackTags:
+    CostCenter: repsales
+    Environment: ${opt:stage,'dev'}
+    Source: "https://github.com/tomatowarning/tomatowarning-com/tree/develop/serverless/mail-handler"
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+resources:
+  Description: "Managed by Serverless Framework. See tags for Source URL."

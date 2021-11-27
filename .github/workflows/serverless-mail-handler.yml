@@ -1,0 +1,46 @@
+on:
+  push:
+    paths:
+      - 'serverless/mail-handler/**'
+    branches:
+      - develop
+      - staging
+      - main
+jobs:
+  deploy:
+    name: deploy
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    env:
+      SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Branch Name
+        id: branch-merge
+        if: github.event_name == 'push'
+        run: echo "branch=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Branch Name Case Transformation
+        id: branch
+        uses: ASzc/change-string-case-action@v1
+        with:
+          string: ${{ env.branch}}
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm i -g serverless
+      - run: npm i -g serverless-plugin-resource-tagging
+      - run: serverless --version
+      - run: serverless deploy --stage ${{ steps.branch.outputs.lowercase }} --verbose
+        working-directory: ./serverless/mail-handler

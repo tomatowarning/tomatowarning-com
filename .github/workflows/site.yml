@@ -1,0 +1,86 @@
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+
+jobs:
+  deploy:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+    env:
+      TF_IN_AUTOMATION: false
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+
+      - name: Get Branch Name
+        id: branch-merge
+        if: github.event_name == 'push'
+        run: echo "branch=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Branch Name Case Transformation
+        id: branch
+        uses: ASzc/change-string-case-action@v1
+        with:
+          string: ${{ env.branch}}
+
+      - name: Set Secret Keys
+        id: set-secret-keys
+        run: |
+          echo "::set-output name=AWS_ACCESS_KEY_NAME::AWS_KEY_${{steps.branch.outputs.uppercase}}"
+          echo "::set-output name=AWS_SECRET_KEY_NAME::AWS_SECRET_${{steps.branch.outputs.uppercase}}"
+          echo "::set-output name=CF_DISTRIBUTION_NAME::CF_DISTRIBUTION_${{steps.branch.outputs.uppercase}}"
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@master
+
+      - name: Run Yarn Install
+        run: yarn install
+
+      - name: Run Yarn Build
+        id: yarn-build
+        run: yarn build
+
+      - name: Configure AWS Creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{secrets[steps.set-secret-keys.outputs.AWS_ACCESS_KEY_NAME]}}
+          aws-secret-access-key: ${{secrets[steps.set-secret-keys.outputs.AWS_SECRET_KEY_NAME]}}
+          aws-region: "us-east-2"
+
+      - name: s3 Sync Web Primary on Push
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        if: github.event_name == 'push'
+        with:
+          args: --acl public-read --delete --cache-control 'max-age=3600'
+        env:
+          # This should really be a variable, but I got lazy.
+          AWS_S3_BUCKET: 'zbmowrey-com-${{ steps.branch.outputs.lowercase }}-web-primary'
+          SOURCE_DIR: "dist"
+
+      - name: s3 Sync Web Secondary on Push
+        id: s3_sync
+        if: github.event_name == 'push'
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --acl public-read --delete --cache-control 'max-age=3600'
+        env:
+          # Same here. Laziness. I'll clean up later.
+          AWS_S3_BUCKET: 'zbmowrey-com-${{ steps.branch.outputs.lowercase }}-web-secondary'
+          SOURCE_DIR: "dist"
+
+      # If a cloudfront distribution key is defined, let's invalidate /* and refresh the cache.
+
+      - name: Invalidate Distribution Path on Push
+        if: github.event_name == 'push' && "${{steps.set-secret-keys.outputs.CF_DISTRIBUTION_NAME}}" != ""
+        run: aws cloudfront create-invalidation --distribution-id="${{secrets[steps.set-secret-keys.outputs.CF_DISTRIBUTION_NAME]}}" --paths="/*"
+
