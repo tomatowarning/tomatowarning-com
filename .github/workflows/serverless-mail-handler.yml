@@ -3,9 +3,7 @@ on:
     paths:
       - 'serverless/mail-handler/**'
     branches:
-      - develop
-      - staging
-      - main
+      - temporary_bypass
 jobs:
   deploy:
     name: deploy
