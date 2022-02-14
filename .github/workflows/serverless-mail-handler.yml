@@ -6,6 +6,11 @@ on:
       - main
       - staging
       - develop
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     name: deploy
@@ -21,18 +26,37 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
 
-      - name: Get Branch Name
+      - name: Branch Name From Push
         id: branch-merge
         if: github.event_name == 'push'
         run: echo "branch=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Branch Name From PR
+        id: branch-pr
+        if: github.event_name == 'pull_request'
+        run: echo "branch=${{github.event.pull_request.base.ref}}" >> $GITHUB_ENV
 
       - name: Branch Name Case Transformation
         id: branch
         uses: ASzc/change-string-case-action@v1
         with:
-          string: ${{ env.branch}}
+          string: ${{ env.branch }}
+
+      - name: Set Keys
+        id: keys
+        run: |
+          echo "::set-output name=ROLE_SESSION_NAME::GithubDeploymentTomatoWarningComServerless${{steps.branch.outputs.capitalized}}"
+          echo "::set-output name=AWS_ACCOUNT_ID::${{secrets[format('AWS_{0}_ACCOUNT',steps.branch.outputs.uppercase)]}}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1.6.0
+        with:
+          role-to-assume: arn:aws:iam::${{steps.keys.outputs.AWS_ACCOUNT_ID}}:role/GithubDeploymentRole
+          role-session-name: ${{steps.keys.outputs.ROLE_SESSION_NAME}}
+          aws-region: us-east-2
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1

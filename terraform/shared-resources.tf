@@ -4,7 +4,7 @@
 resource "aws_dynamodb_table" "global-store" {
   provider = aws.secondary
   hash_key = "k"
-  name     = "${var.app_name}-global-store-${var.environment}"
+  name     = "${var.app_name}-global-store-${terraform.workspace}"
   attribute {
     name = "k"
     type = "S"

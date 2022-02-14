@@ -1,6 +1,6 @@
 #resource "aws_cloudwatch_log_group" "python-example" {
 #  provider = aws.secondary
-#  name = "${local.app_name}-${var.environment}-python-example-logs"
+#  name = "${local.app_name}-${terraform.workspace}-python-example-logs"
 #}
 #
 #resource "aws_lambda_permission" "python-example" {
@@ -13,7 +13,7 @@
 #
 #module "python-example-lambda" {
 #  source        = "terraform-aws-modules/lambda/aws"
-#  function_name = "${var.app_name}-${var.environment}-python-example"
+#  function_name = "${var.app_name}-${terraform.workspace}-python-example"
 #  description   = "Provides a webhook for Slack user impersonation."
 #  handler       = "handle.handle"
 #  runtime       = "python3.8"

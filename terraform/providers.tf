@@ -2,19 +2,19 @@ terraform {
   required_version = ">= 1.0.3"
 
   required_providers {
-    aws    = ">= 2.67"
+    aws    = "~> 3.6"
     random = ">= 2"
   }
 }
 
 provider "aws" {
   region  = "us-east-1"
-  profile = var.environment
+  profile = terraform.workspace
   default_tags {
     tags = {
       CostCenter  = var.app_name
       Owner       = var.owner_name
-      Environment = var.environment
+      Environment = terraform.workspace
       Terraform   = true
     }
   }
@@ -23,12 +23,12 @@ provider "aws" {
 provider "aws" {
   alias   = "primary"
   region  = var.primary_region
-  profile = var.environment
+  profile = terraform.workspace
   default_tags {
     tags = {
       CostCenter  = var.app_name
       Owner       = var.owner_name
-      Environment = var.environment
+      Environment = terraform.workspace
       Terraform   = true
     }
   }
@@ -37,12 +37,12 @@ provider "aws" {
 provider "aws" {
   alias   = "secondary"
   region  = var.secondary_region
-  profile = var.environment
+  profile = terraform.workspace
   default_tags {
     tags = {
       CostCenter  = var.app_name
       Owner       = var.owner_name
-      Environment = var.environment
+      Environment = terraform.workspace
       Terraform   = true
     }
   }
