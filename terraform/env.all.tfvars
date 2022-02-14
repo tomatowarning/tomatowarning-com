@@ -1,0 +1,8 @@
+app_name             = "tomato-warning-com"
+web_primary_bucket   = "web-primary"
+web_secondary_bucket = "web-secondary"
+web_log_bucket       = "web-log"
+owner_name           = "tomatowarning"
+root_domain          = "tomatowarning.com"
+primary_region       = "us-east-2"
+secondary_region     = "us-east-1"
